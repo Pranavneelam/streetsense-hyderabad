@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Login from './Login';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure PDF.js worker so it parses documents properly
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const initialJunctionsData = [
@@ -19,10 +17,10 @@ const initialJunctionsData = [
         types: ['crossing', 'bus', 'junction', 'crash'],
         baseScores: { pedestrian: 92, vehicle: 84, infrastructure: 78, speed: 75, busProximity: 88, crashes: 70 },
         explanation: 'Intense pedestrian footfall from adjacent IT parks during evening peak hours with inadequate crossing infrastructure.',
+        hourlyTrend: [30, 25, 20, 22, 35, 50, 75, 92, 95, 85, 70, 65, 60, 62, 70, 80, 95, 98, 92, 85, 75, 60, 45, 35],
         accidents: [
             { id: 'ACC-801', date: '2026-02-14', time: '19:30', type: 'Pedestrian Strike', severity: 'Fatal', vehicle: 'Commercial Delivery Van', casualties: 1 },
-            { id: 'ACC-802', date: '2026-01-28', time: '08:45', type: 'Rear-End Collision', severity: 'Severe Injury', vehicle: 'Two-Wheeler & Auto', casualties: 2 },
-            { id: 'ACC-803', date: '2025-12-12', time: '21:15', type: 'Angle Collision', severity: 'Property Damage Only', vehicle: 'Car vs Car', casualties: 0 }
+            { id: 'ACC-802', date: '2026-01-28', time: '08:45', type: 'Rear-End Collision', severity: 'Severe Injury', vehicle: 'Two-Wheeler & Auto', casualties: 2 }
         ]
     },
     {
@@ -34,10 +32,9 @@ const initialJunctionsData = [
         types: ['crossing', 'turning', 'junction', 'crash'],
         baseScores: { pedestrian: 88, vehicle: 95, infrastructure: 70, speed: 90, busProximity: 80, crashes: 85 },
         explanation: 'Wide turning radii and high vehicle speeds creating severe conflict points with pedestrians during green signal phases.',
+        hourlyTrend: [35, 28, 22, 25, 40, 60, 82, 95, 98, 90, 75, 68, 62, 65, 75, 85, 98, 99, 94, 88, 78, 62, 48, 38],
         accidents: [
-            { id: 'ACC-701', date: '2026-03-02', time: '23:00', type: 'High-Speed Loss of Control', severity: 'Fatal', vehicle: 'Sports Utility Vehicle', casualties: 2 },
-            { id: 'ACC-702', date: '2026-02-10', time: '14:20', type: 'Side-Swipe Turning Conflict', severity: 'Severe Injury', vehicle: 'RTC Bus & Bike', casualties: 1 },
-            { id: 'ACC-703', date: '2026-01-15', time: '10:10', type: 'Pedestrian Crossing Mishap', severity: 'Severe Injury', vehicle: 'Cab', casualties: 1 }
+            { id: 'ACC-701', date: '2026-03-02', time: '23:00', type: 'High-Speed Loss of Control', severity: 'Fatal', vehicle: 'Sports Utility Vehicle', casualties: 2 }
         ]
     },
     {
@@ -49,9 +46,9 @@ const initialJunctionsData = [
         types: ['crossing', 'bus', 'informal', 'junction'],
         baseScores: { pedestrian: 95, vehicle: 80, infrastructure: 65, speed: 60, busProximity: 92, crashes: 60 },
         explanation: 'High pedestrian exposure due to metro connectivity and disorganized bus bays, causing mid-block informal crossings.',
+        hourlyTrend: [28, 22, 18, 20, 38, 55, 78, 90, 96, 88, 72, 62, 58, 60, 68, 78, 92, 96, 90, 82, 70, 55, 42, 32],
         accidents: [
-            { id: 'ACC-601', date: '2026-02-20', time: '18:00', type: 'Mid-Block Pedestrian Hit', severity: 'Severe Injury', vehicle: 'Auto Rickshaw', casualties: 1 },
-            { id: 'ACC-602', date: '2026-01-05', time: '09:30', type: 'Bus Bay Conflict', severity: 'Property Damage Only', vehicle: 'RTC Bus', casualties: 0 }
+            { id: 'ACC-601', date: '2026-02-20', time: '18:00', type: 'Mid-Block Pedestrian Hit', severity: 'Severe Injury', vehicle: 'Auto Rickshaw', casualties: 1 }
         ]
     },
     {
@@ -63,6 +60,7 @@ const initialJunctionsData = [
         types: ['bus', 'informal', 'turning'],
         baseScores: { pedestrian: 78, vehicle: 82, infrastructure: 80, speed: 65, busProximity: 85, crashes: 55 },
         explanation: 'On-street parking and chaotic boarding zones narrow carriageways and severely restrict sightlines.',
+        hourlyTrend: [25, 20, 15, 18, 30, 45, 65, 78, 85, 75, 62, 55, 50, 52, 60, 70, 82, 85, 80, 72, 60, 48, 35, 28],
         accidents: [
             { id: 'ACC-501', date: '2026-02-11', time: '16:45', type: 'Door-Zone / Parking Strike', severity: 'Minor Injury', vehicle: 'Two-Wheeler', casualties: 1 }
         ]
@@ -76,9 +74,9 @@ const initialJunctionsData = [
         types: ['crossing', 'bus', 'junction', 'crash'],
         baseScores: { pedestrian: 90, vehicle: 92, infrastructure: 85, speed: 80, busProximity: 90, crashes: 82 },
         explanation: 'Severe bottleneck where local traffic merges with the main arterial highway without proper refuge islands.',
+        hourlyTrend: [32, 26, 20, 24, 42, 58, 80, 94, 97, 89, 74, 66, 60, 64, 72, 82, 96, 97, 95, 86, 75, 58, 44, 34],
         accidents: [
-            { id: 'ACC-401', date: '2026-03-01', time: '20:15', type: 'Heavy Vehicle Merge Crash', severity: 'Fatal', vehicle: 'Multi-Axle Truck & Car', casualties: 1 },
-            { id: 'ACC-402', date: '2026-02-04', time: '11:20', type: 'Pedestrian Refuge Collision', severity: 'Severe Injury', vehicle: 'Two-Wheeler', casualties: 1 }
+            { id: 'ACC-401', date: '2026-03-01', time: '20:15', type: 'Heavy Vehicle Merge Crash', severity: 'Fatal', vehicle: 'Multi-Axle Truck & Car', casualties: 1 }
         ]
     }
 ];
@@ -91,124 +89,221 @@ const availableInterventions = [
     { id: 'speedBumps', label: 'Install table-top speed breakers / rumble strips', reduction: 10, cost: 30000, timeline: '2 Days' }
 ];
 
-const governmentAgencies = [
-    {
-        name: 'GHMC (Greater Hyderabad Municipal Corporation)',
-        division: 'Directorate of Urban Planning',
-        badge: 'GHMC-UP-GIS',
-        logoUrl: '/ghmc.png'
-    },
-    {
-        name: 'Cyberabad Traffic Police',
-        division: 'Traffic & Road Safety Wing',
-        badge: 'CYBERABAD-PD-GIS',
-        logoUrl: '/tspolice.png'
-    },
-    {
-        name: 'TG-RTA (Telangana Road Transport Authority)',
-        division: 'Safety & Audit Division',
-        badge: 'TGRTA-AUDIT',
-        logoUrl: '/tsrtc.png'
-    }
+const authorities = [
+    { id: 'ghmc', name: 'GHMC (Greater Hyderabad Municipal Corporation)', badge: 'GHMC-UP-GIS', logoUrl: '/ghmc.png' },
+    { id: 'police', name: 'Telangana State Police (Traffic & Safety Wing)', badge: 'TS-POLICE-GIS', logoUrl: '/tspolice.png' },
+    { id: 'tsrtc', name: 'TSRTC / TGSRTC (Transport Corporation)', badge: 'TSRTC-GIS', logoUrl: '/tsrtc.png' }
 ];
 
-function StreetSenseDashboard() {
+export default function StreetSenseDashboard() {
     const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const markersRef = useRef({});
+    const circleRef = useRef(null);
     const reportRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     const [junctionsData, setJunctionsData] = useState(initialJunctionsData);
-    const [currentTimeHour, setCurrentTimeHour] = useState(() => {
-        const currentHour = new Date().getHours();
-        return Math.min(23, Math.max(6, currentHour));
+    const [currentTimeMinutes, setCurrentTimeMinutes] = useState(() => {
+        const now = new Date();
+        return now.getHours() * 60 + now.getMinutes();
     });
     const [isLiveMode, setIsLiveMode] = useState(true);
     const [activeFilters, setActiveFilters] = useState(['crossing', 'bus', 'turning', 'junction', 'informal', 'crash']);
     const [selectedJunctionId, setSelectedJunctionId] = useState('kondapur');
-    const [appliedInterventions, setAppliedInterventions] = useState(new Set());
-    const [activeView, setActiveView] = useState('map'); // 'map', 'report', 'accidents'
-    const [isMatrixModalOpen, setIsMatrixModalOpen] = useState(false);
+    const [appliedInterventions, setAppliedInterventions] = useState(new Set(['crossing']));
+    const [activeView, setActiveView] = useState('dashboard');
+    const [selectedAuthorityId, setSelectedAuthorityId] = useState('police');
+    const [trafficScenario, setTrafficScenario] = useState('normal');
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-    const [isUploadingPdf, setIsUploadingPdf] = useState(false);
-    const [selectedAgency, setSelectedAgency] = useState(governmentAgencies[0]);
+
+    // Area Analysis states
+    const [isAreaAnalysisActive, setIsAreaAnalysisActive] = useState(true);
+    const [analysisRadiusKm, setAnalysisRadiusKm] = useState(5);
+
+    const currentHour = Math.floor(currentTimeMinutes / 60);
+    const currentMinute = currentTimeMinutes % 60;
 
     useEffect(() => {
-        if (!isLiveMode || activeView !== 'map') return;
+        if (!isLiveMode) return;
         const interval = setInterval(() => {
-            const currentHour = new Date().getHours();
-            setCurrentTimeHour(Math.min(23, Math.max(6, currentHour)));
-        }, 30000);
+            const now = new Date();
+            setCurrentTimeMinutes(now.getHours() * 60 + now.getMinutes());
+        }, 15000);
         return () => clearInterval(interval);
-    }, [isLiveMode, activeView]);
+    }, [isLiveMode]);
 
-    const getTimeMultiplier = (hour) => {
-        if (hour >= 17 && hour <= 20) return 1.35;
-        if (hour >= 8 && hour <= 10) return 1.20;
-        if (hour >= 12 && hour <= 15) return 1.00;
-        return 0.70;
+    const getScenarioMultiplier = () => {
+        if (trafficScenario === 'rain') return 1.25;
+        if (trafficScenario === 'festival') return 1.40;
+        if (trafficScenario === 'vip') return 1.15;
+        return 1.0;
     };
 
-    const computeScore = (junction, hour) => {
-        const mult = getTimeMultiplier(hour);
-        const raw = (
-            junction.baseScores.pedestrian * 0.25 +
-            junction.baseScores.vehicle * 0.20 +
-            junction.baseScores.infrastructure * 0.15 +
-            junction.baseScores.speed * 0.15 +
-            junction.baseScores.busProximity * 0.15 +
-            junction.baseScores.crashes * 0.10
-        ) * (mult > 1.2 ? 1.15 : (mult < 0.8 ? 0.85 : 1.0));
-        return Math.min(99, Math.max(25, Math.round(raw)));
+    const computeScore = (junction, totalMins) => {
+        const hour = Math.floor(totalMins / 60);
+        const minFrac = (totalMins % 60) / 60;
+        const hourlyVal = junction.hourlyTrend[hour] || 50;
+        const nextHourlyVal = junction.hourlyTrend[(hour + 1) % 24] || hourlyVal;
+        
+        const interpolatedVal = hourlyVal + (nextHourlyVal - hourlyVal) * minFrac;
+        const scenarioMult = getScenarioMultiplier();
+        const raw = interpolatedVal * scenarioMult;
+        return Math.min(99, Math.max(20, Math.round(raw)));
     };
 
-    const getRiskBadge = (score) => {
-        if (score > 75) return { label: 'HOTSPOT', bg: 'bg-red-500/10 text-red-400 border-red-500/30' };
-        if (score >= 50) return { label: 'EMERGING RISK', bg: 'bg-amber-500/10 text-amber-400 border-amber-500/30' };
-        return { label: 'SAFER', bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' };
+    const junctionsWithScores = junctionsData.map(j => ({
+        ...j,
+        currentScore: computeScore(j, currentTimeMinutes)
+    }));
+    const sortedJunctions = [...junctionsWithScores].sort((a, b) => b.currentScore - a.currentScore);
+    
+    const hotspotsCount = sortedJunctions.filter(j => j.currentScore > 75).length;
+    const emergingCount = sortedJunctions.filter(j => j.currentScore >= 50 && j.currentScore <= 75).length;
+    const saferCount = sortedJunctions.filter(j => j.currentScore < 50).length;
+
+    const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * (Math.PI / 180);
+        const dLon = (lon2 - lon1) * (Math.PI / 180);
+        const a = 
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+
+    const selectedJunction = sortedJunctions.find(j => j.id === selectedJunctionId) || sortedJunctions[0];
+
+    const junctionsInRadius = sortedJunctions.filter(j => {
+        const dist = getDistanceFromLatLonInKm(selectedJunction.lat, selectedJunction.lng, j.lat, j.lng);
+        return dist <= analysisRadiusKm;
+    });
+
+    const regionalRiskScore = junctionsInRadius.length > 0 
+        ? Math.round(junctionsInRadius.reduce((acc, j) => acc + j.currentScore, 0) / junctionsInRadius.length)
+        : selectedJunction.currentScore;
+
+    const toggleFilter = (type) => {
+        setActiveFilters(prev => 
+            prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+        );
+    };
+
+    const handleFileUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdfDoc = await loadingTask.promise;
+            
+            let extractedText = '';
+            for (let i = 1; i <= pdfDoc.numPages; i++) {
+                const page = await pdfDoc.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                extractedText += ` [Page ${i}] ${pageText}`;
+            }
+
+            const newAccidentId = `ACC-EXT-${Math.floor(100 + Math.random() * 900)}`;
+            const parsedAccident = {
+                id: newAccidentId,
+                date: new Date().toISOString().split('T')[0],
+                time: `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`,
+                type: 'Imported Incident Report',
+                severity: extractedText.toLowerCase().includes('fatal') ? 'Fatal' : 'Severe Injury',
+                vehicle: file.name.replace('.pdf', ''),
+                casualties: 1
+            };
+
+            setJunctionsData(prevJunctions => 
+                prevJunctions.map(j => {
+                    if (j.id === selectedJunctionId) {
+                        return {
+                            ...j,
+                            baseScores: { ...j.baseScores, crashes: Math.min(99, j.baseScores.crashes + 10) },
+                            accidents: [parsedAccident, ...j.accidents]
+                        };
+                    }
+                    return j;
+                })
+            );
+            alert(`Successfully ingested and parsed "${file.name}"! Added incident ${newAccidentId} to ${selectedJunctionId} junction profile.`);
+        } catch (err) {
+            console.error('Error parsing uploaded accident PDF:', err);
+            alert('Failed to parse PDF document. Please ensure it is a valid text-readable PDF file.');
+        }
     };
 
     useEffect(() => {
-        if (activeView !== 'map') return;
-        if (!mapInstanceRef.current && mapRef.current) {
-            const map = L.map(mapRef.current, { zoomControl: false }).setView([17.4550, 78.3750], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
-            mapInstanceRef.current = map;
-        } else if (mapInstanceRef.current) {
-            setTimeout(() => {
-                mapInstanceRef.current.invalidateSize();
-            }, 100);
-        }
+        if (activeView !== 'dashboard') return;
+        const timer = setTimeout(() => {
+            if (mapRef.current) {
+                if (mapInstanceRef.current) {
+                    mapInstanceRef.current.remove();
+                    mapInstanceRef.current = null;
+                }
+                const map = L.map(mapRef.current, { zoomControl: false }).setView([selectedJunction.lat, selectedJunction.lng], 13);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+                
+                L.control.zoom({ position: 'bottomright' }).addTo(map);
+                mapInstanceRef.current = map;
+            }
+        }, 50);
+        return () => {
+            clearTimeout(timer);
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
+            }
+        };
     }, [activeView]);
 
     useEffect(() => {
         const map = mapInstanceRef.current;
-        if (!map || activeView !== 'map') return;
+        if (!map) return;
+
+        if (circleRef.current) {
+            map.removeLayer(circleRef.current);
+            circleRef.current = null;
+        }
+
+        if (isAreaAnalysisActive) {
+            circleRef.current = L.circle([selectedJunction.lat, selectedJunction.lng], {
+                radius: analysisRadiusKm * 1000,
+                color: '#6366f1',
+                fillColor: '#6366f1',
+                fillOpacity: 0.15,
+                weight: 2,
+                dashArray: '4, 4'
+            }).addTo(map);
+        }
+
         Object.values(markersRef.current).forEach(m => map.removeLayer(m));
         markersRef.current = {};
 
-        junctionsData.forEach(junction => {
+        sortedJunctions.forEach(junction => {
             const matchesFilter = junction.types.some(t => activeFilters.includes(t));
             if (!matchesFilter) return;
-            const score = computeScore(junction, currentTimeHour);
+            const score = junction.currentScore;
             const isSelected = selectedJunctionId === junction.id;
+            
             const htmlIcon = `
                 <div class="relative flex items-center justify-center cursor-pointer group">
-                    ${score > 75 ? '<div class="absolute w-12 h-12 rounded-full bg-red-500/30 animate-ping"></div>' : ''}
-                    <div class="px-3 py-1.5 rounded-xl shadow-xl flex items-center gap-1.5 border backdrop-blur-md transition-all transform ${
+                    <div class="absolute w-14 h-14 rounded-full bg-red-500/40 animate-ping"></div>
+                    <div class="absolute w-20 h-20 rounded-full border border-red-500/50 animate-pulse"></div>
+                    <div class="px-3 py-1.5 rounded-xl shadow-2xl flex items-center gap-1.5 border backdrop-blur-md transition-all transform ${
                         isSelected
-                            ? 'bg-red-600 border-white text-white scale-125 z-50 shadow-red-500/50'
-                            : score > 75
-                            ? 'bg-red-500 text-white border-red-300 shadow-red-500/40'
-                            : score >= 50
-                            ? 'bg-amber-500 text-white border-amber-300 shadow-amber-500/40'
-                            : 'bg-emerald-600 text-white border-emerald-300 shadow-emerald-500/40'
+                            ? 'bg-red-600 border-white text-white scale-125 z-50 shadow-[0_0_20px_#ef4444]'
+                            : 'bg-red-500 text-white border-red-300 shadow-[0_0_12px_rgba(239,68,68,0.6)]'
                     }">
-                        <div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-ping"></div>
                         <span class="font-black text-xs tracking-wider">${score}</span>
                     </div>
                 </div>
@@ -216,233 +311,205 @@ function StreetSenseDashboard() {
             const customMarker = L.divIcon({
                 className: 'custom-div-icon',
                 html: htmlIcon,
-                iconSize: [50, 36],
-                iconAnchor: [25, 18]
+                iconSize: [60, 44],
+                iconAnchor: [30, 22]
             });
             const marker = L.marker([junction.lat, junction.lng], { icon: customMarker }).addTo(map);
-            marker.on('click', () => {
-                setSelectedJunctionId(junction.id);
-                setAppliedInterventions(new Set());
-            });
+            marker.on('click', () => setSelectedJunctionId(junction.id));
             markersRef.current[junction.id] = marker;
         });
-    }, [currentTimeHour, activeFilters, selectedJunctionId, activeView, junctionsData]);
+    }, [currentTimeMinutes, activeFilters, selectedJunctionId, sortedJunctions, activeView, trafficScenario, isAreaAnalysisActive, analysisRadiusKm]);
 
-    const handleFilterChange = (type) => {
-        setActiveFilters(prev =>
-            prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
-        );
-    };
-
-    const toggleIntervention = (id) => {
-        setAppliedInterventions(prev => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
-        });
-    };
-
-    const handleFileUpload = async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        setIsUploadingPdf(true);
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-            const pdfDoc = await loadingTask.promise;
-            let extractedText = "";
-            for (let i = 1; i <= pdfDoc.numPages; i++) {
-                const page = await pdfDoc.getPage(i);
-                const textContent = await page.getTextContent();
-                const pageText = textContent.items.map(item => item.str).join(" ");
-                extractedText += pageText + "\n";
-            }
-            const newAccidentId = `ACC-${Math.floor(100 + Math.random() * 900)}`;
-            const isFatal = extractedText.toLowerCase().includes('fatal') || extractedText.toLowerCase().includes('death');
-            const severity = isFatal ? 'Fatal' : extractedText.toLowerCase().includes('severe') ? 'Severe Injury' : 'Property Damage Only';
-            const casualties = isFatal ? 1 : (severity === 'Severe Injury' ? 1 : 0);
-            const parsedAccident = {
-                id: newAccidentId,
-                date: new Date().toISOString().split('T')[0],
-                time: '12:00',
-                type: 'Uploaded Report Incident',
-                severity: severity,
-                vehicle: file.name.replace(/\.[^/.]+$/, ""),
-                casualties: casualties
-            };
-            setJunctionsData(prevData => prevData.map(j => {
-                if (j.id === selectedJunctionId) {
-                    return {
-                        ...j,
-                        accidents: [parsedAccident, ...j.accidents]
-                    };
-                }
-                return j;
-            }));
-            alert(`Successfully parsed and added incident log from ${file.name}!`);
-        } catch (error) {
-            console.error('Error parsing PDF:', error);
-            alert('Failed to parse PDF file. Ensure it is a valid text-based document.');
-        } finally {
-            setIsUploadingPdf(false);
-            event.target.value = null;
-        }
-    };
-
-    const selectedJunction = junctionsData.find(j => j.id === selectedJunctionId) || junctionsData[0];
-    const currentScore = computeScore(selectedJunction, currentTimeHour);
+    const currentAuthority = authorities.find(a => a.id === selectedAuthorityId) || authorities[1];
+    const currentScore = selectedJunction.currentScore;
+    
     const totalReduction = Array.from(appliedInterventions).reduce((acc, id) => {
         const item = availableInterventions.find(i => i.id === id);
         return acc + (item ? item.reduction : 0);
     }, 0);
     const finalScore = Math.max(15, currentScore - totalReduction);
 
-    const scoresList = junctionsData.map(j => computeScore(j, currentTimeHour));
-    const hotspotCount = scoresList.filter(s => s > 75).length;
-    const emergingCount = scoresList.filter(s => s >= 50 && s <= 75).length;
-    const saferCount = scoresList.filter(s => s < 50).length;
-
-    const hourlyTrend = Array.from({ length: 18 }, (_, i) => {
-        const hour = i + 6;
-        return { hour, score: computeScore(selectedJunction, hour) };
-    });
-
     const downloadPDFReport = async () => {
         if (!reportRef.current) return;
         try {
             setIsGeneratingPdf(true);
-            const canvas = await html2canvas(reportRef.current, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#090d16'
-            });
+            const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`${selectedJunction.id}-traffic-audit-report.pdf`);
-        } catch (error) {
-            console.error('Error generating PDF:', error);
+            pdf.save(`${selectedJunction.id}-${currentAuthority.id}-comprehensive-audit.pdf`);
+        } catch (err) {
+            console.error(err);
         } finally {
             setIsGeneratingPdf(false);
         }
     };
 
-    const allAccidents = junctionsData.flatMap(j => j.accidents.map(a => ({ ...a, junctionName: j.name })));
-    const totalFatalities = allAccidents.filter(a => a.severity === 'Fatal').reduce((sum, a) => sum + a.casualties, 0);
-    const totalInjuries = allAccidents.filter(a => a.severity === 'Severe Injury' || a.severity === 'Minor Injury').reduce((sum, a) => sum + a.casualties, 0);
+    const allAccidents = sortedJunctions.flatMap(j => j.accidents.map(a => ({ ...a, junctionName: j.name, conflictScore: j.currentScore })));
+    const sortedAccidents = [...allAccidents].sort((a, b) => b.conflictScore - a.conflictScore);
+
+    const getBarColor = (val) => {
+        if (val > 80) return 'bg-red-500 shadow-[0_0_8px_#ef4444]';
+        if (val >= 60) return 'bg-amber-500 shadow-[0_0_8px_#f59e0b]';
+        return 'bg-emerald-500 shadow-[0_0_8px_#10b981]';
+    };
 
     return (
         <div className="bg-slate-950 text-slate-100 h-screen w-screen flex flex-col overflow-hidden font-sans">
-            {/* Header with Agency Logos */}
-            <header className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex items-center justify-between shrink-0 shadow-lg z-30">
+            <style>{`
+                .leaflet-div-icon {
+                    background: transparent !important;
+                    border: none !important;
+                }
+            `}</style>
+            
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".pdf"
+                className="hidden"
+            />
+
+            {/* Top Navigation Bar */}
+            <header className="bg-slate-900 border-b border-slate-800 px-5 py-2.5 flex items-center justify-between shrink-0 shadow-lg z-30">
                 <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-slate-700 p-1 flex items-center justify-center shadow-md overflow-hidden">
-                        <img
-                            src={selectedAgency.logoUrl}
-                            alt={selectedAgency.name}
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                            }}
-                        />
-                        <div className="w-full h-full items-center justify-center hidden">
-                            <i className="fa-solid fa-building-shield text-white text-sm"></i>
-                        </div>
+                    <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center p-1 shadow">
+                        <img src={currentAuthority.logoUrl} alt="Authority Logo" className="w-full h-full object-contain" />
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-sm font-bold tracking-tight text-white">StreetSense Hyderabad</h1>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">{selectedAgency.badge}</span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">{currentAuthority.badge}</span>
                         </div>
-                        <p className="text-[11px] text-slate-400">Urban Traffic Conflict Analytics & Simulation Suite</p>
+                        <p className="text-[10px] text-slate-400">Urban Traffic Conflict Analytics & Simulation Suite</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-xl text-xs">
-                        <i className="fa-solid fa-building-columns text-indigo-400"></i>
-                        <select
-                            value={selectedAgency.badge}
-                            onChange={(e) => {
-                                const found = governmentAgencies.find(a => a.badge === e.target.value);
-                                if (found) setSelectedAgency(found);
-                            }}
-                            className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer"
-                        >
-                            {governmentAgencies.map(agency => (
-                                <option key={agency.badge} value={agency.badge} className="bg-slate-900 text-slate-200">
-                                    {agency.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
-                        <button
-                            onClick={() => setActiveView('map')}
-                            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${activeView === 'map' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            <i className="fa-solid fa-map"></i> Map Dashboard
-                        </button>
-                        <button
-                            onClick={() => setActiveView('accidents')}
-                            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${activeView === 'accidents' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            <i className="fa-solid fa-triangle-exclamation"></i> Accident & Casualty Log
-                        </button>
-                        <button
-                            onClick={() => setActiveView('report')}
-                            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${activeView === 'report' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            <i className="fa-solid fa-file-lines"></i> PDF Brief
-                        </button>
-                    </div>
-                    <button onClick={() => setIsMatrixModalOpen(true)} className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl shadow-md transition-all flex items-center gap-1.5">
-                        <i className="fa-solid fa-ranking-star"></i> Priority Matrix
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-1.5"
+                    >
+                        <i className="fa-solid fa-cloud-arrow-up"></i> Upload Accident PDF
+                    </button>
+                    <select
+                        value={trafficScenario}
+                        onChange={(e) => setTrafficScenario(e.target.value)}
+                        className="bg-indigo-950/80 border border-indigo-500/50 text-xs font-semibold text-indigo-200 px-3 py-1.5 rounded-lg focus:outline-none shadow"
+                    >
+                        <option value="normal">Scenario: Normal Flow</option>
+                        <option value="rain">Scenario: Heavy Rain / Waterlogging</option>
+                        <option value="festival">Scenario: Festive Rush (Peak)</option>
+                        <option value="vip">Scenario: VIP Convoy Corridor</option>
+                    </select>
+                    <select
+                        value={selectedAuthorityId}
+                        onChange={(e) => setSelectedAuthorityId(e.target.value)}
+                        className="bg-slate-950 border border-slate-700 text-xs font-semibold text-white px-3 py-1.5 rounded-lg focus:outline-none focus:border-indigo-500 shadow"
+                    >
+                        {authorities.map(auth => (
+                            <option key={auth.id} value={auth.id}>{auth.name}</option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={() => setActiveView(activeView === 'report' ? 'dashboard' : 'report')}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-1.5"
+                    >
+                        <i className="fa-solid fa-file-lines"></i> {activeView === 'report' ? 'Back to Map' : 'Export Report View'}
+                    </button>
+                    <button
+                        onClick={() => setActiveView(activeView === 'accidents' ? 'dashboard' : 'accidents')}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg border border-slate-700 transition-all flex items-center gap-1.5"
+                    >
+                        <i className="fa-solid fa-triangle-exclamation text-amber-400"></i> Priority Matrix
                     </button>
                 </div>
             </header>
 
-            {/* Main Content Switcher */}
-            {activeView === 'map' ? (
-                <div className="flex-1 flex overflow-hidden">
-                    <aside className="w-72 bg-slate-900/95 border-r border-slate-800 flex flex-col shrink-0 p-3 space-y-3 overflow-y-auto">
-                        <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-3">
+            {activeView === 'dashboard' ? (
+                <div className="flex-1 relative flex overflow-hidden">
+                    {/* Left Floating Control Panel */}
+                    <div className="absolute top-4 left-4 z-20 w-72 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-2xl p-4 shadow-2xl space-y-4 max-h-[calc(100vh-80px)] overflow-y-auto">
+                        <div>
                             <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Time Mode</span>
-                                    <button
-                                        onClick={() => setIsLiveMode(!isLiveMode)}
-                                        className={`text-[9px] px-2 py-0.5 rounded-full font-bold border transition-all ${isLiveMode ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-slate-700 text-slate-400 border-slate-600'}`}
-                                    >
-                                        {isLiveMode ? 'LIVE SYNC' : 'MANUAL'}
-                                    </button>
-                                </div>
-                                <span className="text-xs font-mono font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded">
-                                    {String(currentTimeHour).padStart(2, '0')}:00 IST
-                                </span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Time Mode</span>
+                                <button
+                                    onClick={() => {
+                                        setIsLiveMode(true);
+                                        const now = new Date();
+                                        setCurrentTimeMinutes(now.getHours() * 60 + now.getMinutes());
+                                    }}
+                                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+                                        isLiveMode 
+                                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                                            : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    <span className={`w-1.5 h-1.5 rounded-full ${isLiveMode ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}></span> 
+                                    {isLiveMode ? 'LIVE SYNC ACTIVE' : 'CLICK TO RESYNC'}
+                                </button>
+                            </div>
+                            <div className="text-xs font-mono font-bold text-indigo-300 mb-2 flex justify-between">
+                                <span>{String(currentHour).padStart(2, '0')}:{String(currentMinute).padStart(2, '0')} IST</span>
+                                <span className="text-[10px] text-slate-400">{trafficScenario !== 'normal' ? `Scenario Active` : 'Standard'}</span>
                             </div>
                             <input
-                                type="range" min="6" max="23" step="1" value={currentTimeHour}
-                                onChange={(e) => {
-                                    setIsLiveMode(false);
-                                    setCurrentTimeHour(parseInt(e.target.value));
-                                }}
-                                className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500 mb-2"
+                                type="range" min="0" max="1439" step="15" value={currentTimeMinutes}
+                                onChange={(e) => { setIsLiveMode(false); setCurrentTimeMinutes(parseInt(e.target.value)); }}
+                                className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                             />
-                            <div className="flex justify-between text-[9px] text-slate-500 font-mono">
-                                <span>06:00</span>
-                                <span>12:00</span>
-                                <span>17:00 (Peak)</span>
-                                <span>23:00</span>
+                            <div className="flex justify-between text-[9px] font-mono text-slate-500 mt-1">
+                                <span>00:00</span>
+                                <span>08:00</span>
+                                <span>16:00</span>
+                                <span>23:45</span>
                             </div>
                         </div>
 
-                        <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-3">
+                        {/* Area Analysis Module */}
+                        <div className="pt-3 border-t border-slate-800 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Area Analysis</span>
+                                <button
+                                    onClick={() => setIsAreaAnalysisActive(!isAreaAnalysisActive)}
+                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-all ${
+                                        isAreaAnalysisActive 
+                                            ? 'bg-indigo-600 border-indigo-400 text-white shadow-[0_0_10px_rgba(99,102,241,0.5)]' 
+                                            : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    {isAreaAnalysisActive ? 'ACTIVE' : 'OFF'}
+                                </button>
+                            </div>
+                            {isAreaAnalysisActive && (
+                                <>
+                                    <div className="text-[10px] text-slate-400 font-medium">Radius: <span className="text-indigo-300 font-bold">{analysisRadiusKm}km</span></div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[5, 10, 25, 50].map(km => (
+                                            <button
+                                                key={km}
+                                                onClick={() => setAnalysisRadiusKm(km)}
+                                                className={`py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                                                    analysisRadiusKm === km 
+                                                        ? 'bg-indigo-600 border-indigo-400 text-white shadow' 
+                                                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:bg-slate-800/60'
+                                                }`}
+                                            >
+                                                {km}km
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="text-[9px] text-slate-500 italic">Centered on: {selectedJunction.name}</div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Conflict Filters */}
+                        <div className="pt-3 border-t border-slate-800">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Conflict Filters</span>
-                            <div className="grid grid-cols-2 gap-1.5 text-xs">
+                            <div className="grid grid-cols-2 gap-2">
                                 {[
                                     { id: 'crossing', label: 'Crossing' },
                                     { id: 'bus', label: 'Bus Bay' },
@@ -450,17 +517,19 @@ function StreetSenseDashboard() {
                                     { id: 'junction', label: 'Junction' },
                                     { id: 'informal', label: 'Informal' },
                                     { id: 'crash', label: 'Crash' }
-                                ].map((f) => {
+                                ].map(f => {
                                     const active = activeFilters.includes(f.id);
                                     return (
                                         <button
                                             key={f.id}
-                                            onClick={() => handleFilterChange(f.id)}
-                                            className={`p-1.5 rounded-lg border text-left flex items-center space-x-1.5 text-[11px] ${active ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-slate-900/40 border-slate-700 text-slate-400'}`}
+                                            onClick={() => toggleFilter(f.id)}
+                                            className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all ${
+                                                active 
+                                                    ? 'bg-indigo-600/20 border-indigo-500/60 text-white shadow' 
+                                                    : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                                            }`}
                                         >
-                                            <div className={`w-3 h-3 rounded flex items-center justify-center border text-[8px] ${active ? 'bg-indigo-600 border-indigo-400 text-white' : 'border-slate-600'}`}>
-                                                {active && <i className="fa-solid fa-check"></i>}
-                                            </div>
+                                            <div className={`w-3 h-3 rounded-md flex items-center justify-center text-[9px] ${active ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-transparent'}`}>✓</div>
                                             <span className="truncate">{f.label}</span>
                                         </button>
                                     );
@@ -468,260 +537,230 @@ function StreetSenseDashboard() {
                             </div>
                         </div>
 
-                        <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-3">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Risk Index Legend</span>
+                        {/* Risk Index Legend */}
+                        <div className="pt-3 border-t border-slate-800 space-y-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Risk Index Legend</span>
                             <div className="space-y-1.5 text-xs">
-                                <div className="flex items-center justify-between bg-slate-900/50 p-1.5 rounded-lg border border-slate-700/50">
-                                    <div className="flex items-center space-x-2">
-                                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                                        <span className="text-[11px] text-slate-300">Hotspots (&gt;75)</span>
+                                <div className="flex items-center justify-between bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></div>
+                                        <span className="text-slate-300 font-medium">Hotspots (&gt;75)</span>
                                     </div>
-                                    <span className="font-bold text-red-400">{hotspotCount}</span>
+                                    <span className="font-mono font-bold text-red-400">{hotspotsCount}</span>
                                 </div>
-                                <div className="flex items-center justify-between bg-slate-900/50 p-1.5 rounded-lg border border-slate-700/50">
-                                    <div className="flex items-center space-x-2">
-                                        <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                                        <span className="text-[11px] text-slate-300">Emerging Risk (50-75)</span>
+                                <div className="flex items-center justify-between bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+                                        <span className="text-slate-300 font-medium">Emerging Risk (50-75)</span>
                                     </div>
-                                    <span className="font-bold text-amber-400">{emergingCount}</span>
+                                    <span className="font-mono font-bold text-amber-400">{emergingCount}</span>
                                 </div>
-                                <div className="flex items-center justify-between bg-slate-900/50 p-1.5 rounded-lg border border-slate-700/50">
-                                    <div className="flex items-center space-x-2">
-                                        <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                                        <span className="text-[11px] text-slate-300">Safer (&lt;50)</span>
+                                <div className="flex items-center justify-between bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                                        <span className="text-slate-300 font-medium">Safer (&lt;50)</span>
                                     </div>
-                                    <span className="font-bold text-emerald-400">{saferCount}</span>
+                                    <span className="font-mono font-bold text-emerald-400">{saferCount}</span>
                                 </div>
                             </div>
                         </div>
-                    </aside>
+                    </div>
 
-                    <main className="flex-1 relative h-full bg-slate-950">
-                        <div ref={mapRef} className="absolute inset-0 w-full h-full" />
-                    </main>
+                    {/* Central Map Canvas */}
+                    <div className="flex-1 relative w-full h-full">
+                        <div ref={mapRef} className="absolute inset-0 w-full h-full z-10" />
+                    </div>
 
-                    <aside className="w-80 bg-slate-900/95 border-l border-slate-800 flex flex-col shrink-0 p-3 space-y-3 overflow-y-auto">
-                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    {/* Right Inspection Panel */}
+                    <div className="absolute top-4 right-4 z-20 w-80 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-2xl p-4 shadow-2xl space-y-4 max-h-[calc(100vh-80px)] overflow-y-auto">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                             <div>
-                                <span className="text-[9px] font-bold text-indigo-400 uppercase">Junction Deep Dive</span>
-                                <h2 className="text-xs font-bold text-white truncate max-w-[170px]">{selectedJunction.name}</h2>
-                            </div>
-                            <div className={`px-2 py-0.5 rounded font-bold text-[9px] border ${getRiskBadge(finalScore).bg}`}>
-                                {getRiskBadge(finalScore).label}
-                            </div>
-                        </div>
-
-                        <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-3 flex justify-between items-center">
-                            <div>
-                                <span className="text-[10px] text-slate-400 font-medium">Conflict Score</span>
-                                <div className="text-xl font-black text-white">{finalScore} <span className="text-[10px] text-slate-500">/ 100</span></div>
-                            </div>
-                            {totalReduction > 0 && (
-                                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30 font-bold">
-                                    -{totalReduction} pts
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                                    {isAreaAnalysisActive ? 'Regional Safety Audit' : 'Junction Deep Dive'}
                                 </span>
-                            )}
+                                <h3 className="text-sm font-black text-white">
+                                    {isAreaAnalysisActive ? `${analysisRadiusKm}km Radius Scan` : selectedJunction.name}
+                                </h3>
+                            </div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 uppercase animate-pulse">
+                                {regionalRiskScore > 75 ? 'HOTSPOT' : 'MODERATE'}
+                            </span>
                         </div>
 
-                        <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-3 space-y-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Targeted Interventions</span>
-                            <div className="space-y-1.5">
-                                {availableInterventions.map((item) => {
-                                    const applied = appliedInterventions.has(item.id);
-                                    return (
-                                        <button
-                                            key={item.id}
-                                            onClick={() => toggleIntervention(item.id)}
-                                            className={`w-full text-left p-2 rounded-lg border transition-all text-xs flex items-center justify-between ${applied ? 'bg-emerald-600/20 border-emerald-500 text-white' : 'bg-slate-900/50 border-slate-700 text-slate-300 hover:border-slate-500'}`}
-                                        >
-                                            <div className="pr-2">
-                                                <div className="font-semibold">{item.label}</div>
-                                                <div className="text-[10px] text-slate-400">-{item.reduction} pts risk | ₹{(item.cost).toLocaleString()}</div>
-                                            </div>
-                                            <div className={`w-4 h-4 rounded flex items-center justify-center border text-[10px] shrink-0 ${applied ? 'bg-emerald-600 border-emerald-400 text-white' : 'border-slate-600'}`}>
-                                                {applied && <i className="fa-solid fa-check"></i>}
-                                            </div>
-                                        </button>
-                                    );
-                                })}
+                        {/* Regional / Junction Score Card */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                    {isAreaAnalysisActive ? 'Regional Risk' : 'Conflict Score'}
+                                </span>
+                                <span className="text-2xl font-black text-white">{regionalRiskScore} <span className="text-xs text-slate-400 font-normal">/ 100</span></span>
+                            </div>
+                            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                    {isAreaAnalysisActive ? 'Junctions Found' : 'Severity Level'}
+                                </span>
+                                <span className="text-2xl font-black text-indigo-300">
+                                    {isAreaAnalysisActive ? junctionsInRadius.length : (currentScore > 75 ? 'Critical' : 'Moderate')}
+                                </span>
                             </div>
                         </div>
 
-                        <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-3 space-y-2">
-                            <div className="flex justify-between items-center">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">24h Conflict Trend</span>
-                                <span className="text-[9px] text-indigo-400 font-mono">Hourly Profile</span>
-                            </div>
-                            <div className="h-20 flex items-end gap-1 pt-2 pb-1 border-b border-slate-700/60">
-                                {hourlyTrend.map((item) => {
-                                    const isCurrent = item.hour === currentTimeHour;
-                                    const heightPct = item.score;
-                                    const barColor = item.score > 75 ? 'bg-red-500' : item.score >= 50 ? 'bg-amber-500' : 'bg-emerald-500';
-                                    return (
-                                        <div
-                                            key={item.hour}
-                                            onClick={() => {
-                                                setIsLiveMode(false);
-                                                setCurrentTimeHour(item.hour);
-                                            }}
-                                            className="flex-1 flex flex-col items-center h-full justify-end group relative cursor-pointer"
+                        {/* Regional Contributors or Risk Factor Breakdown */}
+                        {isAreaAnalysisActive ? (
+                            <div className="space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Regional Contributors</span>
+                                    <span className="text-[9px] font-mono text-indigo-400">{analysisRadiusKm}km Buffer</span>
+                                </div>
+                                <div className="space-y-2">
+                                    {junctionsInRadius.map(j => (
+                                        <div 
+                                            key={j.id} 
+                                            onClick={() => setSelectedJunctionId(j.id)}
+                                            className="p-2.5 bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all"
                                         >
-                                            <div className="absolute -top-7 bg-slate-900 text-white text-[9px] px-1.5 py-0.5 rounded border border-slate-700 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none">
-                                                {String(item.hour).padStart(2, '0')}:00 ({item.score})
+                                            <div>
+                                                <div className="text-xs font-bold text-white">{j.name}</div>
+                                                <div className="text-[10px] text-slate-400">{j.category}</div>
                                             </div>
-                                            <div
-                                                style={{ height: `${heightPct}%` }}
-                                                className={`w-full rounded-t transition-all ${barColor} ${isCurrent ? 'ring-2 ring-white scale-y-105' : 'opacity-70 group-hover:opacity-100'}`}
-                                            />
+                                            <span className="font-mono font-bold text-red-400">{j.currentScore}/100</span>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </aside>
-                </div>
-            ) : activeView === 'accidents' ? (
-                <div className="flex-1 p-6 overflow-y-auto bg-slate-950 space-y-6">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                        <div>
-                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                <i className="fa-solid fa-triangle-exclamation text-red-500"></i> Accident & Casualty Log
-                            </h2>
-                            <p className="text-xs text-slate-400 mt-1">Comprehensive historical incident registry across all monitored Hyderabad junctions.</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <label className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl cursor-pointer shadow-md transition-all flex items-center gap-2">
-                                <input type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
-                                <i className="fa-solid fa-file-arrow-up"></i> {isUploadingPdf ? 'Parsing PDF...' : 'Upload Incident PDF'}
-                            </label>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-xl">
-                            <span className="text-xs text-slate-400 font-medium">Total Recorded Incidents</span>
-                            <div className="text-2xl font-black text-white mt-1">{allAccidents.length}</div>
-                        </div>
-                        <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-xl">
-                            <span className="text-xs text-slate-400 font-medium">Total Fatalities</span>
-                            <div className="text-2xl font-black text-red-400 mt-1">{totalFatalities}</div>
-                        </div>
-                        <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-xl">
-                            <span className="text-xs text-slate-400 font-medium">Total Injuries</span>
-                            <div className="text-2xl font-black text-amber-400 mt-1">{totalInjuries}</div>
-                        </div>
-                    </div>
-
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-                        <div className="p-4 border-b border-slate-800 font-bold text-xs uppercase tracking-wider text-slate-300">
-                            Incident History Database
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs">
-                                <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px]">
-                                    <tr>
-                                        <th className="p-3">Incident ID</th>
-                                        <th className="p-3">Junction</th>
-                                        <th className="p-3">Date & Time</th>
-                                        <th className="p-3">Incident Type</th>
-                                        <th className="p-3">Severity</th>
-                                        <th className="p-3">Involved Vehicle</th>
-                                        <th className="p-3">Casualties</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-800/60">
-                                    {allAccidents.map((acc) => (
-                                        <tr key={acc.id} className="hover:bg-slate-800/30 transition-colors">
-                                            <td className="p-3 font-mono font-bold text-indigo-400">{acc.id}</td>
-                                            <td className="p-3 font-semibold text-white">{acc.junctionName}</td>
-                                            <td className="p-3 text-slate-400">{acc.date} at {acc.time}</td>
-                                            <td className="p-3 text-slate-300">{acc.type}</td>
-                                            <td className="p-3">
-                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${acc.severity === 'Fatal' ? 'bg-red-500/20 text-red-400 border-red-500/30' : acc.severity.includes('Injury') ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-slate-700/50 text-slate-300 border-slate-600'}`}>
-                                                    {acc.severity}
-                                                </span>
-                                            </td>
-                                            <td className="p-3 text-slate-300">{acc.vehicle}</td>
-                                            <td className="p-3 font-mono font-bold text-white">{acc.casualties}</td>
-                                        </tr>
                                     ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    {junctionsInRadius.length === 0 && (
+                                        <p className="text-xs text-slate-500 text-center py-4">No junctions found within this radius.</p>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-3 pt-1">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Risk Factor Breakdown</span>
+                                    <span className="text-[9px] font-mono text-slate-500">Scale 0-100</span>
+                                </div>
+                                <div className="space-y-2.5 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                                    {[
+                                        { label: 'Pedestrian', val: selectedJunction.baseScores.pedestrian },
+                                        { label: 'Vehicle', val: selectedJunction.baseScores.vehicle },
+                                        { label: 'Infrastructure', val: selectedJunction.baseScores.infrastructure },
+                                        { label: 'Speed', val: selectedJunction.baseScores.speed },
+                                        { label: 'Bus Proximity', val: selectedJunction.baseScores.busProximity },
+                                        { label: 'Crashes', val: selectedJunction.baseScores.crashes }
+                                    ].map(rf => (
+                                        <div key={rf.label} className="space-y-1">
+                                            <div className="flex justify-between text-xs">
+                                                <span className="text-slate-300 font-medium">{rf.label}</span>
+                                                <span className="font-mono font-bold text-white">{rf.val}%</span>
+                                            </div>
+                                            <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                                <div className={`h-full rounded-full ${getBarColor(rf.val)}`} style={{ width: `${rf.val}%` }}></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {!isAreaAnalysisActive && (
+                            <div className="space-y-2 pt-2 border-t border-slate-800">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">AI Diagnostic Summary</span>
+                                <p className="text-[11px] leading-relaxed text-slate-300 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                                    {selectedJunction.explanation}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
-            ) : (
+            ) : activeView === 'report' ? (
                 <div className="flex-1 p-6 overflow-y-auto bg-slate-950 flex flex-col items-center">
                     <div className="w-full max-w-4xl flex justify-between items-center mb-4">
-                        <h2 className="text-sm font-bold text-white">Official Agency Audit Report Preview</h2>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400">Select Junction Brief:</span>
+                            <select
+                                value={selectedJunctionId}
+                                onChange={(e) => setSelectedJunctionId(e.target.value)}
+                                className="bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-1.5 font-semibold focus:outline-none"
+                            >
+                                {sortedJunctions.map(j => (
+                                    <option key={j.id} value={j.id}>{j.name} ({j.currentScore})</option>
+                                ))}
+                            </select>
+                        </div>
                         <button
                             onClick={downloadPDFReport}
                             disabled={isGeneratingPdf}
-                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-md transition-all flex items-center gap-2"
+                            className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-1.5"
                         >
-                            <i className="fa-solid fa-download"></i> {isGeneratingPdf ? 'Generating PDF...' : 'Download Official PDF'}
+                            <i className="fa-solid fa-download"></i> {isGeneratingPdf ? 'Exporting PDF...' : 'Download Official PDF'}
                         </button>
                     </div>
 
-                    <div ref={reportRef} className="w-full max-w-4xl bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl space-y-6 text-slate-100">
-                        <div className="border-b border-slate-800 pb-6 flex justify-between items-start">
-                            <div className="flex items-center gap-3">
-                                <img src={selectedAgency.logoUrl} alt="Agency Logo" className="w-12 h-12 object-contain" />
+                    {/* PDF Report Container */}
+                    <div ref={reportRef} className="w-full max-w-4xl bg-white text-slate-900 p-10 rounded-xl shadow-2xl space-y-8 font-sans border border-slate-300">
+                        <div className="flex justify-between items-center border-b-2 border-slate-900 pb-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 rounded-xl bg-white border border-slate-300 p-1.5 flex items-center justify-center shadow">
+                                    <img src={currentAuthority.logoUrl} alt="Report Logo" className="w-full h-full object-contain" />
+                                </div>
                                 <div>
-                                    <div className="text-[10px] font-bold text-indigo-400 tracking-widest uppercase">{selectedAgency.name}</div>
-                                    <h1 className="text-xl font-black text-white mt-1">ROAD SAFETY AUDIT & INTERVENTION BRIEF</h1>
-                                    <p className="text-xs text-slate-400 mt-0.5">Generated via StreetSense GIS Analytics Suite</p>
+                                    <h1 className="text-base font-black uppercase tracking-wider text-slate-900">{currentAuthority.name}</h1>
+                                    <p className="text-xs font-semibold text-slate-600">Urban Traffic Safety & Operations Directorate</p>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <div className="text-xs font-mono font-bold bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">Ref: AUDIT-2026-HYD</div>
-                                <div className="text-[10px] text-slate-500 mt-1">Date: {new Date().toISOString().split('T')[0]}</div>
+                                <div className="text-[11px] font-mono font-bold text-slate-700">Ref: AUDIT-{selectedJunction.id.toUpperCase()}</div>
+                                <div className="text-[11px] font-medium text-slate-500">Date: 9/18/2026</div>
+                                <div className="text-[10px] uppercase font-bold text-red-600 mt-1 tracking-widest">Confidential / Official Audit</div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
-                                <span className="text-[10px] uppercase font-bold text-slate-400">Audited Location</span>
-                                <div className="text-base font-bold text-white mt-1">{selectedJunction.name}</div>
-                                <div className="text-xs text-slate-400 mt-0.5">{selectedJunction.category}</div>
+                        <div className="space-y-1">
+                            <div className="text-xs font-bold uppercase tracking-widest text-indigo-700">Junction Safety & Incident Audit Brief</div>
+                            <h2 className="text-2xl font-black text-slate-900">{selectedJunction.name}</h2>
+                            <p className="text-xs font-semibold text-slate-500">Category: {selectedJunction.category} | Coordinates: {selectedJunction.lat}, {selectedJunction.lng}</p>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-6 bg-slate-50 border border-slate-200 p-5 rounded-xl">
+                            <div className="col-span-2 space-y-2">
+                                <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">Primary Safety Hazard Analysis</h3>
+                                <p className="text-xs leading-relaxed text-slate-700 font-medium">
+                                    {selectedJunction.explanation}
+                                </p>
                             </div>
-                            <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
-                                <span className="text-[10px] uppercase font-bold text-slate-400">Current Risk Index</span>
-                                <div className="text-base font-bold text-white mt-1 flex items-center gap-2">
-                                    <span>{finalScore}/100</span>
-                                    <span className={`text-[10px] px-2 py-0.5 rounded border ${getRiskBadge(finalScore).bg}`}>
-                                        {getRiskBadge(finalScore).label}
-                                    </span>
-                                </div>
+                            <div className="border-l border-slate-200 pl-6 flex flex-col justify-center">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Current Risk Index</span>
+                                <div className="text-3xl font-black text-red-600 mt-1">{finalScore} / 100</div>
+                                <span className="text-[10px] text-slate-500 mt-1">Simulated / Live Flow</span>
                             </div>
                         </div>
 
-                        <div>
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-2">Junction Safety Assessment & Analysis</h3>
-                            <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/40 p-4 rounded-xl border border-slate-800/80">
-                                {selectedJunction.explanation} Based on multi-variable telemetry, peak conflict hours concentrate between 17:00 and 20:00 IST. Immediate administrative intervention is mandated to mitigate pedestrian vulnerability and vehicular conflict points.
-                            </p>
-                        </div>
-
-                        <div>
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-2">Recommended Interventions & Cost-Benefit Analysis</h3>
-                            <div className="border border-slate-800 rounded-xl overflow-hidden">
-                                <table className="w-full text-left text-xs">
-                                    <thead className="bg-slate-950 text-slate-400 uppercase text-[10px]">
-                                        <tr>
-                                            <th className="p-3">Intervention Measure</th>
-                                            <th className="p-3">Risk Reduction</th>
-                                            <th className="p-3">Est. Cost</th>
-                                            <th className="p-3">Timeline</th>
+                        {/* Recorded Incidents Table */}
+                        <div className="space-y-3">
+                            <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">Historical Incidents & Crash Records</h3>
+                            <div className="border border-slate-200 rounded-xl overflow-hidden">
+                                <table className="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                        <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                                            <th className="p-3">Incident ID</th>
+                                            <th className="p-3">Date & Time</th>
+                                            <th className="p-3">Type</th>
+                                            <th className="p-3">Severity</th>
+                                            <th className="p-3">Vehicle Involved</th>
+                                            <th className="p-3">Casualties</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-800">
-                                        {availableInterventions.map((item) => (
-                                            <tr key={item.id} className="text-slate-300">
-                                                <td className="p-3 font-semibold">{item.label}</td>
-                                                <td className="p-3 text-emerald-400 font-bold">-{item.reduction} pts</td>
-                                                <td className="p-3 font-mono">₹{item.cost.toLocaleString()}</td>
-                                                <td className="p-3 text-slate-400">{item.timeline}</td>
+                                    <tbody className="divide-y divide-slate-200 text-slate-800">
+                                        {selectedJunction.accidents.map(acc => (
+                                            <tr key={acc.id} className="hover:bg-slate-50">
+                                                <td className="p-3 font-mono font-bold text-indigo-700">{acc.id}</td>
+                                                <td className="p-3">{acc.date} {acc.time}</td>
+                                                <td className="p-3 font-medium">{acc.type}</td>
+                                                <td className="p-3">
+                                                    <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${acc.severity === 'Fatal' ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-amber-100 text-amber-700 border border-amber-300'}`}>
+                                                        {acc.severity}
+                                                    </span>
+                                                </td>
+                                                <td className="p-3">{acc.vehicle}</td>
+                                                <td className="p-3 font-mono font-bold">{acc.casualties}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -729,76 +768,95 @@ function StreetSenseDashboard() {
                             </div>
                         </div>
 
-                        <div className="pt-6 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500">
-                            <div>Authorized by {selectedAgency.name} ({selectedAgency.division})</div>
-                            <div className="font-mono">Digital Signature Hash: 7F9A2B4E9901C</div>
+                        {/* Proposed Countermeasures */}
+                        <div className="space-y-3">
+                            <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">Recommended Countermeasures & Mitigation Plan</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                {availableInterventions.map(item => {
+                                    const isApplied = appliedInterventions.has(item.id);
+                                    return (
+                                        <div key={item.id} className={`p-3 rounded-xl border flex items-center justify-between ${isApplied ? 'bg-indigo-50 border-indigo-300 text-indigo-950' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
+                                            <div className="space-y-1">
+                                                <div className="text-xs font-bold">{item.label}</div>
+                                                <div className="text-[10px] text-slate-500 font-medium">Est. Risk Reduction: <span className="text-emerald-600 font-bold">-{item.reduction}%</span> | Cost: ₹{(item.cost).toLocaleString()}</div>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setAppliedInterventions(prev => {
+                                                        const next = new Set(prev);
+                                                        if (next.has(item.id)) next.delete(item.id);
+                                                        else next.add(item.id);
+                                                        return next;
+                                                    });
+                                                }}
+                                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${isApplied ? 'bg-indigo-600 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}
+                                            >
+                                                {isApplied ? 'Applied' : 'Apply'}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="pt-6 border-t border-slate-200 flex justify-between items-center text-[11px] text-slate-500">
+                            <div>Authorized by: <span className="font-bold text-slate-800">{currentAuthority.name}</span></div>
+                            <div>StreetSense AI Infrastructure GIS System v3.4</div>
                         </div>
                     </div>
                 </div>
-            )}
-
-            {/* Priority Matrix Modal */}
-            {isMatrixModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
-                        <div className="p-4 border-b border-slate-800 flex justify-between items-center">
-                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                <i className="fa-solid fa-ranking-star text-indigo-400"></i> Hyderabad Junction Priority Matrix
-                            </h3>
-                            <button onClick={() => setIsMatrixModalOpen(false)} className="text-slate-400 hover:text-white">
-                                <i className="fa-solid fa-xmark text-base"></i>
+            ) : (
+                <div className="flex-1 p-6 overflow-y-auto bg-slate-950 flex flex-col items-center">
+                    <div className="w-full max-w-5xl space-y-6">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h2 className="text-lg font-black text-white">City-Wide Priority Accident Matrix</h2>
+                                <p className="text-xs text-slate-400">Aggregated incident records across all monitored Hyderabad junctions</p>
+                            </div>
+                            <button
+                                onClick={() => setActiveView('dashboard')}
+                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow transition-all"
+                            >
+                                Back to Map View
                             </button>
                         </div>
-                        <div className="p-4 overflow-y-auto space-y-3">
-                            <p className="text-xs text-slate-400">Junctions ranked in descending order of current risk score during peak hours for resource allocation.</p>
-                            <div className="space-y-2">
-                                {junctionsData
-                                    .map(j => ({ ...j, currentScore: computeScore(j, currentTimeHour) }))
-                                    .sort((a, b) => b.currentScore - a.currentScore)
-                                    .map((j, index) => (
-                                        <div key={j.id} className="bg-slate-950/60 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <span className="w-6 h-6 rounded-lg bg-indigo-600/20 text-indigo-400 font-mono font-bold flex items-center justify-center text-xs border border-indigo-500/30">
-                                                    #{index + 1}
+                        <div className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-900 shadow-xl">
+                            <table className="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr className="bg-slate-950 text-slate-400 font-bold border-b border-slate-800">
+                                        <th className="p-4">Junction Name</th>
+                                        <th className="p-4">Conflict Score</th>
+                                        <th className="p-4">Incident ID</th>
+                                        <th className="p-4">Date & Time</th>
+                                        <th className="p-4">Type</th>
+                                        <th className="p-4">Severity</th>
+                                        <th className="p-4">Vehicle</th>
+                                        <th className="p-4">Casualties</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800 text-slate-200">
+                                    {sortedAccidents.map((acc, idx) => (
+                                        <tr key={`${acc.id}-${idx}`} className="hover:bg-slate-800/50">
+                                            <td className="p-4 font-bold text-indigo-300">{acc.junctionName}</td>
+                                            <td className="p-4 font-mono font-bold text-red-400">{acc.conflictScore}</td>
+                                            <td className="p-4 font-mono text-slate-400">{acc.id}</td>
+                                            <td className="p-4">{acc.date} {acc.time}</td>
+                                            <td className="p-4 font-medium">{acc.type}</td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${acc.severity === 'Fatal' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}>
+                                                    {acc.severity}
                                                 </span>
-                                                <div>
-                                                    <h4 className="text-xs font-bold text-white">{j.name}</h4>
-                                                    <span className="text-[10px] text-slate-400">{j.category}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="text-right">
-                                                    <div className="text-xs font-black text-white">{j.currentScore} / <span className="text-[9px] text-slate-500">Peak Risk</span></div>
-                                                </div>
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedJunctionId(j.id);
-                                                        setActiveView('map');
-                                                        setIsMatrixModalOpen(false);
-                                                    }}
-                                                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold rounded-lg transition-all"
-                                                >
-                                                    Inspect
-                                                </button>
-                                            </div>
-                                        </div>
+                                            </td>
+                                            <td className="p-4">{acc.vehicle}</td>
+                                            <td className="p-4 font-mono font-bold">{acc.casualties}</td>
+                                        </tr>
                                     ))}
-                            </div>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             )}
         </div>
     );
-}
-
-// --- WRAPPER APP COMPONENT ---
-export default function App() {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-    if (!isAuthenticated) {
-        return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
-    }
-
-    return <StreetSenseDashboard />;
 }
