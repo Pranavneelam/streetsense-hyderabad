@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Login from './Login';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import html2canvas from 'html2canvas';
@@ -111,7 +112,7 @@ const governmentAgencies = [
     }
 ];
 
-export default function StreetSenseDashboard() {
+function StreetSenseDashboard() {
     const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const markersRef = useRef({});
@@ -789,4 +790,15 @@ export default function StreetSenseDashboard() {
             )}
         </div>
     );
+}
+
+// --- WRAPPER APP COMPONENT ---
+export default function App() {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    if (!isAuthenticated) {
+        return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
+    }
+
+    return <StreetSenseDashboard />;
 }
