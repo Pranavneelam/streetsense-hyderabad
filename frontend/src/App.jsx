@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import html2canvas from 'html2canvas';
@@ -97,11 +98,15 @@ const authorities = [
 
 export default function StreetSenseDashboard() {
     const mapRef = useRef(null);
+    const excelInputRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const markersRef = useRef({});
     const circleRef = useRef(null);
     const reportRef = useRef(null);
     const fileInputRef = useRef(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [badgeId, setBadgeId] = useState('GHMC-UP-GIS');
+    const [password, setPassword] = useState('');
 
     const [junctionsData, setJunctionsData] = useState(initialJunctionsData);
     const [currentTimeMinutes, setCurrentTimeMinutes] = useState(() => {
@@ -190,6 +195,15 @@ export default function StreetSenseDashboard() {
             prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
         );
     };
+    const handleLogin = (e) => {
+    e.preventDefault();
+    if (!badgeId.trim()) {
+        alert('Please enter a valid Department Badge ID.');
+        return;
+    }
+    // Simple authentication pass for demo / evaluation
+    setIsAuthenticated(true);
+};
 
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
@@ -236,6 +250,72 @@ export default function StreetSenseDashboard() {
             alert('Failed to parse PDF document. Please ensure it is a valid text-readable PDF file.');
         }
     };
+    const handleExcelUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonData.length === 0) {
+            alert('The uploaded Excel sheet is empty.');
+            return;
+        }
+
+        let importedCount = 0;
+
+        setJunctionsData(prevJunctions => {
+            const updatedJunctions = [...prevJunctions];
+
+            jsonData.forEach((row) => {
+                const jName = String(row.JunctionName || row.junction || row.Name || 'kondapur').toLowerCase();
+                const accId = row.IncidentID || row.ID || `ACC-XL-${Math.floor(1000 + Math.random() * 9000)}`;
+                const date = row.Date || new Date().toISOString().split('T')[0];
+                const time = row.Time || '12:00';
+                const type = row.Type || row.IncidentType || 'Imported Road Mishap';
+                const severity = row.Severity || 'Severe Injury';
+                const vehicle = row.Vehicle || row.VehicleType || 'Unknown Vehicle';
+                const casualties = parseInt(row.Casualties || row.Injured || 1, 10);
+
+                let targetJunction = updatedJunctions.find(j => j.id.toLowerCase() === jName || j.name.toLowerCase().includes(jName));
+                
+                if (!targetJunction) {
+                    targetJunction = updatedJunctions.find(j => j.id === selectedJunctionId) || updatedJunctions[0];
+                }
+
+                const newAccident = {
+                    id: String(accId),
+                    date: String(date),
+                    time: String(time),
+                    type: String(type),
+                    severity: String(severity),
+                    vehicle: String(vehicle),
+                    casualties: isNaN(casualties) ? 1 : casualties
+                };
+
+                targetJunction.accidents.unshift(newAccident);
+                if (targetJunction.baseScores && typeof targetJunction.baseScores.crashes === 'number') {
+                    targetJunction.baseScores.crashes = Math.min(99, targetJunction.baseScores.crashes + 4);
+                }
+                importedCount++;
+            });
+
+            return updatedJunctions;
+        });
+
+        alert(`Successfully imported ${importedCount} accident records from "${file.name}"!`);
+    } catch (err) {
+        console.error('Error parsing Excel file:', err);
+        alert('Failed to parse Excel file. Please ensure it is a valid .xlsx or .csv file.');
+    } finally {
+        if (excelInputRef.current) excelInputRef.current.value = '';
+    }
+};
 
     useEffect(() => {
         if (activeView !== 'dashboard') return;
@@ -355,10 +435,86 @@ export default function StreetSenseDashboard() {
         if (val >= 60) return 'bg-amber-500 shadow-[0_0_8px_#f59e0b]';
         return 'bg-emerald-500 shadow-[0_0_8px_#10b981]';
     };
+    if (!isAuthenticated) {
+        return (
+<div className="bg-slate-50 text-slate-900 h-screen w-screen flex flex-col items-center justify-center p-4 font-sans select-none">
+    <div className="max-w-md w-full bg-white border border-slate-200 rounded-2xl shadow-xl p-8 flex flex-col items-center relative overflow-hidden">
+        {/* Agency Logos */}
+        <div className="flex items-center gap-4 mb-6 bg-slate-100 px-5 py-2.5 rounded-full border border-slate-200 shadow-inner">
+            <img src="/ghmc.png" alt="GHMC Logo" className="w-8 h-8 object-contain drop-shadow" />
+            <div className="w-px h-5 bg-slate-300"></div>
+            <img src="/tspolice.png" alt="TS Police Logo" className="w-8 h-8 object-contain drop-shadow" />
+            <div className="w-px h-5 bg-slate-300"></div>
+            <img src="/tsrtc.png" alt="TSRTC Logo" className="w-8 h-8 object-contain drop-shadow" />
+        </div>
+
+        <h1 className="text-2xl font-black tracking-tight text-slate-900 mb-1">StreetSense Hyderabad</h1>
+        <p className="text-[11px] font-bold tracking-widest text-indigo-600 uppercase mb-8">Cyberabad Official Agency Portal</p>
+
+        <form onSubmit={handleLogin} className="w-full space-y-5">
+            <div>
+                <label className="block text-[10px] font-extrabold tracking-wider text-slate-600 uppercase mb-2">
+                    Department Badge ID
+                </label>
+                <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <i className="fa-solid fa-id-card"></i>
+                    </span>
+                    <input
+                        type="text"
+                        value={badgeId}
+                        onChange={(e) => setBadgeId(e.target.value)}
+                        placeholder="Enter Badge ID"
+                        required
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-600 transition-all"
+                    />
+                </div>
+            </div>
+
+            <div>
+                <label className="block text-[10px] font-extrabold tracking-wider text-slate-600 uppercase mb-2">
+                    Security Pin / Password
+                </label>
+                <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <i className="fa-solid fa-lock"></i>
+                    </span>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-600 transition-all"
+                    />
+                </div>
+            </div>
+
+            <button
+                type="submit"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+            >
+                <i className="fa-solid fa-right-to-bracket"></i> Secure Agency Access
+            </button>
+        </form>
+
+        <p className="text-[11px] text-slate-500 text-center mt-6">
+            Restricted access for authorized personnel of GHMC, Hyderabad Traffic Police & TSRTC only.
+        </p>
+    <p className="text-[11px] text-slate-500 text-center mt-6">
+                        Restricted access for authorized personnel of GHMC, Hyderabad Traffic Police & TSRTC only.
+                    </p>
+                </div>
+                <div className="text-[10px] text-slate-400 mt-6 tracking-wide">
+                    Cyberabad Urban Traffic Intelligence Infrastructure • Secure SSL Session
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-slate-950 text-slate-100 h-screen w-screen flex flex-col overflow-hidden font-sans">
             <style>{`
+                .leaflet-div-icon {
                 .leaflet-div-icon {
                     background: transparent !important;
                     border: none !important;
@@ -370,6 +526,13 @@ export default function StreetSenseDashboard() {
                 ref={fileInputRef}
                 onChange={handleFileUpload}
                 accept=".pdf"
+                className="hidden"
+            />
+            <input
+                type="file"
+                ref={excelInputRef}
+                onChange={handleExcelUpload}
+                accept=".xlsx, .xls, .csv"
                 className="hidden"
             />
 
@@ -393,6 +556,12 @@ export default function StreetSenseDashboard() {
                         className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-1.5"
                     >
                         <i className="fa-solid fa-cloud-arrow-up"></i> Upload Accident PDF
+                    </button>
+                    <button
+                        onClick={() => excelInputRef.current?.click()}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                        <i className="fa-solid fa-file-excel"></i> Upload Excel Data
                     </button>
                     <select
                         value={trafficScenario}
